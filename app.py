@@ -3,8 +3,7 @@ import requests
 import pandas as pd
 
 
-server_location = "http://127.0.0.1:8000"
-
+server_location =st.secrets[ "server_url"]
 st.title("💰 Expense Tracker Application")
 
 
