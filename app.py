@@ -5,8 +5,18 @@ import pandas as pd
 
 server_location = st.secrets["server_url"]
 
+st.set_page_config(
+    page_title="Expense Tracker",
+    page_icon="💰",
+    layout="wide"
+)
+
 st.title("💰 Expense Tracker Application")
 
+
+# =========================
+# SIDEBAR
+# =========================
 
 opt = st.sidebar.selectbox(
     "Select Operation",
@@ -58,35 +68,49 @@ if opt == "Add Expense":
 
         if btn:
 
-            new_data = {
-                "title": title,
-                "amount": amount,
-                "category": category,
-                "date": str(date)
-            }
+            if title.strip() == "":
 
-            try:
+                st.error("Expense title cannot be empty")
 
-                response = requests.post(
-                    f"{server_location}/expenses",
-                    json=new_data
-                )
+            else:
 
-                data = response.json()
+                new_data = {
+                    "title": title,
+                    "amount": amount,
+                    "category": category,
+                    "date": str(date)
+                }
 
-                if response.status_code == 200:
-                    st.success(
-                        data.get(
-                            "message",
-                            "Expense Added Successfully"
-                        )
+                try:
+
+                    response = requests.post(
+                        f"{server_location}/expenses",
+                        json=new_data
                     )
 
-                else:
-                    st.error(data)
+                    data = response.json()
 
-            except Exception as e:
-                st.error(f"Error: {e}")
+                    if response.status_code == 200:
+
+                        st.success(
+                            data.get(
+                                "message",
+                                "Expense Added Successfully"
+                            )
+                        )
+
+                    else:
+
+                        st.error(
+                            data.get(
+                                "detail",
+                                "Something went wrong"
+                            )
+                        )
+
+                except Exception as e:
+
+                    st.error(f"Error: {e}")
 
 
 # =========================
@@ -107,14 +131,30 @@ elif opt == "View Expenses":
 
         if response.status_code == 200:
 
-            df = pd.DataFrame(data)
+            if len(data) == 0:
 
-            st.dataframe(df)
+                st.warning("No expenses found")
+
+            else:
+
+                df = pd.DataFrame(data)
+
+                st.dataframe(
+                    df,
+                    use_container_width=True
+                )
 
         else:
-            st.error(data)
+
+            st.error(
+                data.get(
+                    "detail",
+                    "Failed to fetch data"
+                )
+            )
 
     except Exception as e:
+
         st.error(f"Error: {e}")
 
 
@@ -128,7 +168,8 @@ elif opt == "Update Expense":
 
     expense_id = st.number_input(
         "Expense ID",
-        min_value=1
+        min_value=1,
+        step=1
     )
 
     title = st.text_input("New Title")
@@ -154,34 +195,48 @@ elif opt == "Update Expense":
 
     if btn:
 
-        updated_data = {
-            "title": title,
-            "amount": amount,
-            "category": category
-        }
+        if title.strip() == "":
 
-        try:
+            st.error("Title cannot be empty")
 
-            response = requests.put(
-                f"{server_location}/expenses/{expense_id}",
-                json=updated_data
-            )
+        else:
 
-            data = response.json()
+            updated_data = {
+                "title": title,
+                "amount": amount,
+                "category": category
+            }
 
-            if response.status_code == 200:
-                st.success(
-                    data.get(
-                        "message",
-                        "Expense Updated Successfully"
-                    )
+            try:
+
+                response = requests.put(
+                    f"{server_location}/expenses/{expense_id}",
+                    json=updated_data
                 )
 
-            else:
-                st.error(data)
+                data = response.json()
 
-        except Exception as e:
-            st.error(f"Error: {e}")
+                if response.status_code == 200:
+
+                    st.success(
+                        data.get(
+                            "message",
+                            "Expense Updated Successfully"
+                        )
+                    )
+
+                else:
+
+                    st.error(
+                        data.get(
+                            "detail",
+                            "Update failed"
+                        )
+                    )
+
+            except Exception as e:
+
+                st.error(f"Error: {e}")
 
 
 # =========================
@@ -194,7 +249,8 @@ elif opt == "Delete Expense":
 
     expense_id = st.number_input(
         "Expense ID",
-        min_value=1
+        min_value=1,
+        step=1
     )
 
     btn = st.button("Delete Expense")
@@ -210,7 +266,8 @@ elif opt == "Delete Expense":
             data = response.json()
 
             if response.status_code == 200:
-                st.warning(
+
+                st.success(
                     data.get(
                         "message",
                         "Expense Deleted Successfully"
@@ -218,9 +275,16 @@ elif opt == "Delete Expense":
                 )
 
             else:
-                st.error(data)
+
+                st.error(
+                    data.get(
+                        "detail",
+                        "Delete failed"
+                    )
+                )
 
         except Exception as e:
+
             st.error(f"Error: {e}")
 
 
@@ -233,7 +297,7 @@ elif opt == "Search Expense":
     st.header("🔍 Search Expense")
 
     keyword = st.text_input(
-        "Enter title/category"
+        "Enter Title or Category"
     )
 
     btn = st.button("Search")
@@ -250,14 +314,30 @@ elif opt == "Search Expense":
 
             if response.status_code == 200:
 
-                df = pd.DataFrame(data)
+                if len(data) == 0:
 
-                st.dataframe(df)
+                    st.warning("No matching expenses found")
+
+                else:
+
+                    df = pd.DataFrame(data)
+
+                    st.dataframe(
+                        df,
+                        use_container_width=True
+                    )
 
             else:
-                st.error(data)
+
+                st.error(
+                    data.get(
+                        "detail",
+                        "Search failed"
+                    )
+                )
 
         except Exception as e:
+
             st.error(f"Error: {e}")
 
 
@@ -273,7 +353,7 @@ elif opt == "Sort Expenses":
         "Sort By",
         [
             "amount",
-            "date",
+            "expense_date",
             "category"
         ]
     )
@@ -288,14 +368,30 @@ elif opt == "Sort Expenses":
 
         if response.status_code == 200:
 
-            df = pd.DataFrame(data)
+            if len(data) == 0:
 
-            st.dataframe(df)
+                st.warning("No expenses available")
+
+            else:
+
+                df = pd.DataFrame(data)
+
+                st.dataframe(
+                    df,
+                    use_container_width=True
+                )
 
         else:
-            st.error(data)
+
+            st.error(
+                data.get(
+                    "detail",
+                    "Sorting failed"
+                )
+            )
 
     except Exception as e:
+
         st.error(f"Error: {e}")
 
 
@@ -333,14 +429,30 @@ elif opt == "Filter Expenses":
 
             if response.status_code == 200:
 
-                df = pd.DataFrame(data)
+                if len(data) == 0:
 
-                st.dataframe(df)
+                    st.warning("No expenses found")
+
+                else:
+
+                    df = pd.DataFrame(data)
+
+                    st.dataframe(
+                        df,
+                        use_container_width=True
+                    )
 
             else:
-                st.error(data)
+
+                st.error(
+                    data.get(
+                        "detail",
+                        "Filter failed"
+                    )
+                )
 
         except Exception as e:
+
             st.error(f"Error: {e}")
 
 
@@ -362,28 +474,45 @@ elif opt == "Analyze Spending":
 
         if response.status_code == 200:
 
-            st.subheader("Total Spending")
+            st.subheader("💵 Total Spending")
 
-            st.write(
-                data["total_spending"]
+            st.metric(
+                label="Total Amount",
+                value=f"₹ {data['total_spending']}"
             )
 
-            st.subheader(
-                "Category Wise Spending"
-            )
+            st.subheader("📊 Category Wise Spending")
 
             category_df = pd.DataFrame(
                 data["category_wise"]
             )
 
-            st.bar_chart(
-                category_df.set_index(
-                    "category"
+            if len(category_df) > 0:
+
+                st.dataframe(
+                    category_df,
+                    use_container_width=True
+                )
+
+                st.bar_chart(
+                    category_df.set_index(
+                        "category"
+                    )
+                )
+
+            else:
+
+                st.warning("No analysis data found")
+
+        else:
+
+            st.error(
+                data.get(
+                    "detail",
+                    "Analysis failed"
                 )
             )
 
-        else:
-            st.error(data)
-
     except Exception as e:
+
         st.error(f"Error: {e}")
