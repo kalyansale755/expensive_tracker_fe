@@ -3,7 +3,8 @@ import requests
 import pandas as pd
 
 
-server_location =st.secrets[ "server_url"]
+server_location = st.secrets["server_url"]
+
 st.title("💰 Expense Tracker Application")
 
 
@@ -22,6 +23,9 @@ opt = st.sidebar.selectbox(
 )
 
 
+# =========================
+# ADD EXPENSE
+# =========================
 
 if opt == "Add Expense":
 
@@ -30,10 +34,22 @@ if opt == "Add Expense":
     with st.form("add_expense"):
 
         title = st.text_input("Expense Title")
-        amount = st.number_input("Amount", min_value=0.0)
+
+        amount = st.number_input(
+            "Amount",
+            min_value=0.0
+        )
+
         category = st.selectbox(
             "Category",
-            ["Food", "Travel", "Shopping", "Bills", "Entertainment", "Other"]
+            [
+                "Food",
+                "Travel",
+                "Shopping",
+                "Bills",
+                "Entertainment",
+                "Other"
+            ]
         )
 
         date = st.date_input("Expense Date")
@@ -49,44 +65,89 @@ if opt == "Add Expense":
                 "date": str(date)
             }
 
-            response = requests.post(
-                f"{server_location}/expenses",
-                json=new_data
-            )
+            try:
 
-            st.success(response.json())
+                response = requests.post(
+                    f"{server_location}/expenses",
+                    json=new_data
+                )
+
+                data = response.json()
+
+                if response.status_code == 200:
+                    st.success(
+                        data.get(
+                            "message",
+                            "Expense Added Successfully"
+                        )
+                    )
+
+                else:
+                    st.error(data)
+
+            except Exception as e:
+                st.error(f"Error: {e}")
 
 
-
+# =========================
+# VIEW EXPENSES
+# =========================
 
 elif opt == "View Expenses":
 
     st.header("📋 View Expenses")
 
-    response = requests.get(f"{server_location}/expenses")
+    try:
 
-    data = response.json()
+        response = requests.get(
+            f"{server_location}/expenses"
+        )
 
-    df = pd.DataFrame(data)
+        data = response.json()
 
-    st.dataframe(df)
+        if response.status_code == 200:
+
+            df = pd.DataFrame(data)
+
+            st.dataframe(df)
+
+        else:
+            st.error(data)
+
+    except Exception as e:
+        st.error(f"Error: {e}")
 
 
-
+# =========================
+# UPDATE EXPENSE
+# =========================
 
 elif opt == "Update Expense":
 
     st.header("✏️ Update Expense")
 
-    expense_id = st.number_input("Expense ID", min_value=1)
+    expense_id = st.number_input(
+        "Expense ID",
+        min_value=1
+    )
 
     title = st.text_input("New Title")
 
-    amount = st.number_input("New Amount", min_value=0.0)
+    amount = st.number_input(
+        "New Amount",
+        min_value=0.0
+    )
 
     category = st.selectbox(
         "New Category",
-        ["Food", "Travel", "Shopping", "Bills", "Entertainment", "Other"]
+        [
+            "Food",
+            "Travel",
+            "Shopping",
+            "Bills",
+            "Entertainment",
+            "Other"
+        ]
     )
 
     btn = st.button("Update Expense")
@@ -99,57 +160,110 @@ elif opt == "Update Expense":
             "category": category
         }
 
-        response = requests.put(
-            f"{server_location}/expenses/{expense_id}",
-            json=updated_data
-        )
+        try:
 
-        st.success(response.json())
+            response = requests.put(
+                f"{server_location}/expenses/{expense_id}",
+                json=updated_data
+            )
+
+            data = response.json()
+
+            if response.status_code == 200:
+                st.success(
+                    data.get(
+                        "message",
+                        "Expense Updated Successfully"
+                    )
+                )
+
+            else:
+                st.error(data)
+
+        except Exception as e:
+            st.error(f"Error: {e}")
 
 
-
+# =========================
+# DELETE EXPENSE
+# =========================
 
 elif opt == "Delete Expense":
 
     st.header("🗑️ Delete Expense")
 
-    expense_id = st.number_input("Expense ID", min_value=1)
+    expense_id = st.number_input(
+        "Expense ID",
+        min_value=1
+    )
 
     btn = st.button("Delete Expense")
 
     if btn:
 
-        response = requests.delete(
-            f"{server_location}/expenses/{expense_id}"
-        )
+        try:
 
-        st.warning(response.json())
+            response = requests.delete(
+                f"{server_location}/expenses/{expense_id}"
+            )
+
+            data = response.json()
+
+            if response.status_code == 200:
+                st.warning(
+                    data.get(
+                        "message",
+                        "Expense Deleted Successfully"
+                    )
+                )
+
+            else:
+                st.error(data)
+
+        except Exception as e:
+            st.error(f"Error: {e}")
 
 
-
+# =========================
+# SEARCH EXPENSE
+# =========================
 
 elif opt == "Search Expense":
 
     st.header("🔍 Search Expense")
 
-    keyword = st.text_input("Enter title/category")
+    keyword = st.text_input(
+        "Enter title/category"
+    )
 
     btn = st.button("Search")
 
     if btn:
 
-        response = requests.get(
-            f"{server_location}/expenses/search/{keyword}"
-        )
+        try:
 
-        data = response.json()
+            response = requests.get(
+                f"{server_location}/expenses/search/{keyword}"
+            )
 
-        df = pd.DataFrame(data)
+            data = response.json()
 
-        st.dataframe(df)
+            if response.status_code == 200:
+
+                df = pd.DataFrame(data)
+
+                st.dataframe(df)
+
+            else:
+                st.error(data)
+
+        except Exception as e:
+            st.error(f"Error: {e}")
 
 
-
+# =========================
+# SORT EXPENSES
+# =========================
 
 elif opt == "Sort Expenses":
 
@@ -157,20 +271,37 @@ elif opt == "Sort Expenses":
 
     sort_by = st.selectbox(
         "Sort By",
-        ["amount", "date", "category"]
+        [
+            "amount",
+            "date",
+            "category"
+        ]
     )
 
-    response = requests.get(
-        f"{server_location}/expenses/sort/{sort_by}"
-    )
+    try:
 
-    data = response.json()
+        response = requests.get(
+            f"{server_location}/expenses/sort/{sort_by}"
+        )
 
-    df = pd.DataFrame(data)
+        data = response.json()
 
-    st.dataframe(df)
+        if response.status_code == 200:
+
+            df = pd.DataFrame(data)
+
+            st.dataframe(df)
+
+        else:
+            st.error(data)
+
+    except Exception as e:
+        st.error(f"Error: {e}")
 
 
+# =========================
+# FILTER EXPENSES
+# =========================
 
 elif opt == "Filter Expenses":
 
@@ -178,47 +309,81 @@ elif opt == "Filter Expenses":
 
     category = st.selectbox(
         "Select Category",
-        ["Food", "Travel", "Shopping", "Bills", "Entertainment", "Other"]
+        [
+            "Food",
+            "Travel",
+            "Shopping",
+            "Bills",
+            "Entertainment",
+            "Other"
+        ]
     )
 
     btn = st.button("Filter")
 
     if btn:
 
-        response = requests.get(
-            f"{server_location}/expenses/filter/{category}"
-        )
+        try:
 
-        data = response.json()
+            response = requests.get(
+                f"{server_location}/expenses/filter/{category}"
+            )
 
-        df = pd.DataFrame(data)
+            data = response.json()
 
-        st.dataframe(df)
+            if response.status_code == 200:
+
+                df = pd.DataFrame(data)
+
+                st.dataframe(df)
+
+            else:
+                st.error(data)
+
+        except Exception as e:
+            st.error(f"Error: {e}")
 
 
-
+# =========================
+# ANALYZE SPENDING
+# =========================
 
 elif opt == "Analyze Spending":
 
     st.header("📈 Spending Analysis")
 
-    response = requests.get(
-        f"{server_location}/expenses/analysis"
-    )
+    try:
 
-    data = response.json()
+        response = requests.get(
+            f"{server_location}/expenses/analysis"
+        )
 
-    st.subheader("Total Spending")
-    st.write(data["total_spending"])
+        data = response.json()
 
-    st.subheader("Category Wise Spending")
+        if response.status_code == 200:
 
-    category_df = pd.DataFrame(
-        data["category_wise"]
-    )
+            st.subheader("Total Spending")
 
-    st.bar_chart(
-        category_df.set_index("category")
-    )
+            st.write(
+                data["total_spending"]
+            )
 
+            st.subheader(
+                "Category Wise Spending"
+            )
 
+            category_df = pd.DataFrame(
+                data["category_wise"]
+            )
+
+            st.bar_chart(
+                category_df.set_index(
+                    "category"
+                )
+            )
+
+        else:
+            st.error(data)
+
+    except Exception as e:
+        st.error(f"Error: {e}")
